@@ -21,53 +21,79 @@ $stats = [
 ];
 
 // จำนวนใบสมัครทั้งหมด
-$result = $conn->query("SELECT COUNT(*) as count FROM applications");
+$stmt = $conn->prepare("SELECT COUNT(*) as count FROM applications");
+$stmt->execute();
+$result = $stmt->get_result();
 $stats['total_applications'] = $result->fetch_assoc()['count'];
 
 // จำนวนตำแหน่งที่เปิดรับ
-$result = $conn->query("SELECT COUNT(*) as count FROM positions WHERE status = 'open'");
+$stmt = $conn->prepare("SELECT COUNT(*) as count FROM positions WHERE status = ?");
+$status = 'open';
+$stmt->bind_param("s", $status);
+$stmt->execute();
+$result = $stmt->get_result();
 $stats['open_positions'] = $result->fetch_assoc()['count'];
 
 // จำนวนใบสมัครที่ผ่านการคัดเลือก
-$result = $conn->query("SELECT COUNT(*) as count FROM applications WHERE status = 'approved'");
+$stmt = $conn->prepare("SELECT COUNT(*) as count FROM applications WHERE status = ?");
+$status = 'approved';
+$stmt->bind_param("s", $status);
+$stmt->execute();
+$result = $stmt->get_result();
 $stats['approved'] = $result->fetch_assoc()['count'];
 
 // จำนวนใบสมัครที่ถูกปฏิเสธ
-$result = $conn->query("SELECT COUNT(*) as count FROM applications WHERE status = 'rejected'");
+$stmt = $conn->prepare("SELECT COUNT(*) as count FROM applications WHERE status = ?");
+$status = 'rejected';
+$stmt->bind_param("s", $status);
+$stmt->execute();
+$result = $stmt->get_result();
 $stats['rejected'] = $result->fetch_assoc()['count'];
 
 // จำนวนใบสมัครที่รอพิจารณา
-$result = $conn->query("SELECT COUNT(*) as count FROM applications WHERE status = 'pending'");
+$stmt = $conn->prepare("SELECT COUNT(*) as count FROM applications WHERE status = ?");
+$status = 'pending';
+$stmt->bind_param("s", $status);
+$stmt->execute();
+$result = $stmt->get_result();
 $stats['pending'] = $result->fetch_assoc()['count'];
 
 // นับจำนวนการสมัครงานในแต่ละแผนก
-$result = $conn->query("
+$stmt = $conn->prepare("
     SELECT p.department, COUNT(*) as count 
     FROM applications a 
     JOIN positions p ON a.position_id = p.id 
     GROUP BY p.department
 ");
+$stmt->execute();
+$result = $stmt->get_result();
 while ($row = $result->fetch_assoc()) {
     $stats['department_applications'][$row['department']] = $row['count'];
 }
 
 // นับจำนวนผู้ใช้งานทั้งหมด
-$result = $conn->query("SELECT COUNT(*) as count FROM users");
+$stmt = $conn->prepare("SELECT COUNT(*) as count FROM users");
+$stmt->execute();
+$result = $stmt->get_result();
 $stats['user_count'] = $result->fetch_assoc()['count'];
 
 // นับจำนวนตำแหน่งงานในแต่ละประเภท
-$result = $conn->query("
+$stmt = $conn->prepare("
     SELECT type, COUNT(*) as count 
     FROM positions 
-    WHERE status = 'open' 
+    WHERE status = ? 
     GROUP BY type
 ");
+$status = 'open';
+$stmt->bind_param("s", $status);
+$stmt->execute();
+$result = $stmt->get_result();
 while ($row = $result->fetch_assoc()) {
     $stats['job_types'][$row['type']] = $row['count'];
 }
 
 // ดึงข้อมูลใบสมัครล่าสุด
-$latest_applications = $conn->query("
+$stmt = $conn->prepare("
     SELECT a.*, p.title as position_title, u.name as applicant_name 
     FROM applications a 
     JOIN positions p ON a.position_id = p.id 
@@ -75,6 +101,8 @@ $latest_applications = $conn->query("
     ORDER BY a.created_at DESC 
     LIMIT 10
 ");
+$stmt->execute();
+$latest_applications = $stmt->get_result();
 ?>
 <!DOCTYPE html>
 <html lang="th">
